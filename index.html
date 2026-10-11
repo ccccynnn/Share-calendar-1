@@ -357,7 +357,8 @@ const CLOUD_KEYS=['cynShiftOverrides','pearlShiftNotes','pearlShiftMoods'];
 let cloudClient=null, cloudUser=null, cloudChannel=null, cloudApplying=false, cloudSyncTimer=null;
 function cloudMessage(text){const el=document.getElementById('cloudMessage');if(el)el.textContent=text;}
 function cloudStatus(text,connected=false){const el=document.getElementById('cloudStatus');if(el){el.textContent='目前：'+text;el.classList.toggle('connected',connected)}}
-function readCloudConfig(){try{return JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY)||'null')}catch(e){return null}}
+const TEST_SUPABASE_CONFIG={url:'https://xjctvfewlcxvadcydohm.supabase.co',key:'sb_publishable_qopN8GwIkTv07KzQRCxr8Q_o1-tSpK5'};
+function readCloudConfig(){return TEST_SUPABASE_CONFIG}
 function readCalendarPayload(){const p={};for(const k of CLOUD_KEYS){try{p[k]=JSON.parse(localStorage.getItem(k)||'{}')}catch(e){p[k]={}}}return p}
 function writeCalendarPayload(payload){cloudApplying=true;try{for(const k of CLOUD_KEYS){if(payload&&payload[k]&&typeof payload[k]==='object')localStorage.setItem(k,JSON.stringify(payload[k]));else if(!localStorage.getItem(k))localStorage.setItem(k,'{}')}}finally{cloudApplying=false}}
 function mergeCalendarPayload(local,remote){const out={};for(const k of CLOUD_KEYS){out[k]={...(remote?.[k]||{}),...(local?.[k]||{})}}return out}
