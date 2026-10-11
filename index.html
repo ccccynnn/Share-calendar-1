@@ -170,7 +170,6 @@ body:before{content:var(--bubble-symbol, "🫧　·　✦　·　🫧")}
 .cloud-label input{display:block;width:100%;margin-top:6px;border:1px solid var(--line);border-radius:12px;padding:11px;background:#fff;color:var(--ink);font:inherit}
 .cloud-actions{display:flex;flex-wrap:wrap;gap:8px}
 .cloud-actions .btn{margin:0}
-body.shared-readonly #page-calendar .shift-editor,body.shared-readonly #page-calendar #note,body.shared-readonly #page-calendar .mood-grid{opacity:.72}body.shared-readonly #page-appearance{user-select:none} .share-panel .cloud-label{display:block;margin:10px 0}
 </style></head>
 <body>
 <header><div class="brand"><span class="logo">♕</span><span class="brand-title">*･゜ﾟ･*:.｡..｡.:* Cyn’s work calendar*:.｡. .｡.:*･゜ﾟ･*</span></div></header>
@@ -188,13 +187,6 @@ body.shared-readonly #page-calendar .shift-editor,body.shared-readonly #page-cal
 <label class="cloud-label">登入電子郵件<input id="cloudEmail" type="email" placeholder="you@example.com" autocomplete="email"></label>
 <div class="btnrow cloud-actions"><button type="button" class="btn primary" id="cloudLogin">儲存設定並寄送登入連結</button><button type="button" class="btn" id="cloudSyncNow">立即同步</button><button type="button" class="btn" id="cloudLogout">登出</button></div>
 <p class="notice" id="cloudMessage" role="status"></p>
-<div class="share-panel" style="margin-top:16px;padding:14px;border:1px solid #eadce9;border-radius:18px;background:#fff9fd">
-<h3 style="margin-top:0">🎀 只讀分享行事曆</h3>
-<p class="notice">分享對象需使用受邀的同一個電子郵件登入。對方只能查看班表與外觀，不能修改班別；私人備註與心情不會分享。</p>
-<label class="cloud-label">受邀者電子郵件<input id="shareViewerEmail" type="email" placeholder="friend@example.com" autocomplete="email"></label>
-<div class="btnrow"><button type="button" class="btn" id="shareInvite">新增／更新受邀者</button><button type="button" class="btn primary" id="sharePublish">發布／更新共享班表</button><button type="button" class="btn" id="shareRefresh">查看受邀班表</button></div>
-<p class="notice" id="shareMessage" role="status"></p><div id="shareList" class="notice"></div>
-</div>
 </div>
 <div class="card holiday-settings"><h2>🎉 各國國定假日與節日</h2><p class="notice">日期會標記在月曆上；可自由多選要顯示的國家，也可全部顯示或隱藏節日。台灣補假、日本法定假日及韓國農曆節日的未來日期，請以各國官方公告為準。</p><div class="holiday-filters" role="group" aria-label="假日顯示範圍"><button type="button" class="btn" data-holiday-filter="all">全部顯示</button><button type="button" class="btn" data-holiday-filter="TW">🇹🇼 台灣</button><button type="button" class="btn" data-holiday-filter="US">🇺🇸 美國</button><button type="button" class="btn" data-holiday-filter="JP">🇯🇵 日本</button><button type="button" class="btn" data-holiday-filter="KR">🇰🇷 韓國</button><button type="button" class="btn" data-holiday-filter="off">隱藏節日</button></div><div class="holiday-legend"><span><i class="holiday-dot tw"></i>台灣</span><span><i class="holiday-dot us"></i>美國</span><span><i class="holiday-dot jp"></i>日本</span><span><i class="holiday-dot kr"></i>韓國</span><span class="notice">點選日期可查看當日節日名稱</span></div></div><div class="card"><h2>📲 iPhone 行事曆提醒</h2><p class="notice">匯出未來 12 個月的日班、夜班與加班（從明天開始）；上班日會在前一天晚上 20:00 提醒。此功能只匯出日班、夜班與加班，並保留舊版事件的取消標記；iPhone 是否自動同步刪除仍取決於匯入方式與行事曆支援。</p><button type="button" class="btn primary" id="exportICS">匯出 iPhone 行事曆（.ics）</button><p class="notice">日班：07:30–19:30；夜班：19:30–隔日 07:30；加班會依當日所屬的日班／夜班階段自動套用對應時間。只匯出日班、夜班與加班事件。</p></div><div class="card"><h2>排班規則</h2><div class="rule night"><b>☾ 夜班</b><br>主要上班日週三至週六，隔週休週六。時間：19:30～隔日 07:30。固定 8 週。</div><div class="rule day"><b>☀ 日班</b><br>主要上班日週三至週六，隔週休週三。時間：07:30～19:30。固定 8 週。</div><p class="notice">排班起點：2026/10/07 開始夜班；2026/10/21 切換日班；2026/10/28 是日班隔週休週三的那一週。日班八週後切換夜班八週，之後交替。</p></div><div class="card"><h2>班別時間</h2><div class="statsrow"><span>日班</span><b>07:30–19:30</b></div><div class="statsrow"><span>夜班</span><b>19:30–隔日 07:30</b></div></div></section>
 <section class="page" id="page-future"><div class="card"><h2>未來輪班排程・倒數</h2><p class="notice">顯示各階段日期，以及距離開始或結束還有幾天。</p><div id="phases"></div></div></section>
@@ -350,133 +342,100 @@ restoreModuleOrder();renderModuleSettings();document.getElementById('resetModule
 
 document.querySelectorAll('.bottomnav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.bottomnav button').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+b.dataset.page));window.scrollTo({top:0,behavior:'smooth'})});
 if('serviceWorker'in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-// ===== Cloud sync add-on (calendar overrides, notes, moods) =====
-// Cloud stores only this app's selected calendar data; unrelated iPhone calendar events are never touched here.
+// ===== Cloud sync: calendar + appearance, timestamp-based conflict resolution =====
 const CLOUD_CONFIG_KEY='cynCloudConfigV1';
 const CLOUD_KEYS=['cynShiftOverrides','pearlShiftNotes','pearlShiftMoods'];
-let cloudClient=null, cloudUser=null, cloudChannel=null, cloudApplying=false, cloudSyncTimer=null;
+const APPEARANCE_KEYS=['cynAppearanceTheme','cynAppearanceIcons','cynAppearanceBackground','cynAppearancePageBackground','cynCardBgOverlay','cynCardBgBlur','cynPageBgOverlay','cynCardBorderColor','cynCardBorderWidth','cynCardRadius','cynBrandIcon','cynModuleStyles','cynModuleOrder',...['day','night','off','overtime','leave'].map(k=>'cynCategoryColor'+k),...Array.from({length:5},(_,i)=>'cynAppearanceNavIcon'+i)];
+const CLOUD_META_KEY='cynCloudSyncMetaV2';
+let cloudClient=null,cloudUser=null,cloudChannel=null,cloudApplying=false,cloudSyncTimer=null,cloudLocalSnapshot={};
+const isCalendarKey=k=>CLOUD_KEYS.includes(k);
+const isAppearanceKey=k=>APPEARANCE_KEYS.includes(k)||String(k).startsWith('cynCategoryColor');
+const isCloudKey=k=>isCalendarKey(k)||isAppearanceKey(k);
 function cloudMessage(text){const el=document.getElementById('cloudMessage');if(el)el.textContent=text;}
 function cloudStatus(text,connected=false){const el=document.getElementById('cloudStatus');if(el){el.textContent='目前：'+text;el.classList.toggle('connected',connected)}}
-const TEST_SUPABASE_CONFIG={url:'https://xjctvfewlcxvadcydohm.supabase.co',key:'sb_publishable_qopN8GwIkTv07KzQRCxr8Q_o1-tSpK5'};
-function readCloudConfig(){return TEST_SUPABASE_CONFIG}
-function readCalendarPayload(){const p={};for(const k of CLOUD_KEYS){try{p[k]=JSON.parse(localStorage.getItem(k)||'{}')}catch(e){p[k]={}}}return p}
-function writeCalendarPayload(payload){cloudApplying=true;try{for(const k of CLOUD_KEYS){if(payload&&payload[k]&&typeof payload[k]==='object')localStorage.setItem(k,JSON.stringify(payload[k]));else if(!localStorage.getItem(k))localStorage.setItem(k,'{}')}}finally{cloudApplying=false}}
-function mergeCalendarPayload(local,remote){const out={};for(const k of CLOUD_KEYS){out[k]={...(remote?.[k]||{}),...(local?.[k]||{})}}return out}
+function readCloudConfig(){try{return JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY)||'null')}catch(e){return null}}
+function readSyncMeta(){try{return JSON.parse(localStorage.getItem(CLOUD_META_KEY)||'{}')||{}}catch(e){return {}}}
+function writeSyncMeta(meta){cloudApplying=true;try{localStorage.setItem(CLOUD_META_KEY,JSON.stringify(meta||{}))}finally{cloudApplying=false}}
+function rawLocal(key){return localStorage.getItem(key)}
+function parseMap(raw){try{const v=JSON.parse(raw||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return {}}}
+function normalRawValue(key,value){if(value===undefined||value===null)return null;if(isCalendarKey(key)&&typeof value==='object')return JSON.stringify(value);if(typeof value==='string')return value;return JSON.stringify(value)}
+function readCloudPayload(){const p={};for(const k of [...CLOUD_KEYS,...APPEARANCE_KEYS]){const raw=rawLocal(k);if(raw!==null)p[k]=raw}p._syncMeta=readSyncMeta();return p}
+function entryPath(key,sub){return key+'|'+sub}
+function getEntries(payload,key){const raw=payload?.[key];if(raw===undefined||raw===null)return null;if(isCalendarKey(key)){const map=typeof raw==='string'?parseMap(raw):(raw&&typeof raw==='object'?raw:{});return map}return {'$':normalRawValue(key,raw)}}
+function stampFor(meta,path){const v=meta?.[path];return typeof v==='number'?{ts:v,deleted:false}:v&&typeof v==='object'?{ts:Number(v.ts)||0,deleted:!!v.deleted}:{ts:0,deleted:false}}
+function mergeCloudPayload(local,remote){
+ const out={},metaOut={},lm=local?._syncMeta||{},rm=remote?._syncMeta||{};
+ const keys=[...new Set([...CLOUD_KEYS,...APPEARANCE_KEYS,...Object.keys(local||{}).filter(isCloudKey),...Object.keys(remote||{}).filter(isCloudKey)])];
+ for(const key of keys){
+  const le=getEntries(local,key)||{},re=getEntries(remote,key)||{};const subs=isCalendarKey(key)?new Set([...Object.keys(le),...Object.keys(re),...Object.keys(lm).filter(p=>p.startsWith(key+'|')).map(p=>p.slice(key.length+1)),...Object.keys(rm).filter(p=>p.startsWith(key+'|')).map(p=>p.slice(key.length+1))]):new Set(['$']);
+  const merged={};let scalarSet=false,scalarVal=null;
+  for(const sub of subs){const path=entryPath(key,sub),lv=Object.prototype.hasOwnProperty.call(le,sub),rv=Object.prototype.hasOwnProperty.call(re,sub);let l=stampFor(lm,path),r=stampFor(rm,path);if(l.ts===r.ts){if(lv||l.deleted){/* local wins ties, including explicit local delete */}else if(rv||r.deleted){l=r}}else if(r.ts>l.ts)l=r;
+   const localStamp=stampFor(lm,path),remoteStamp=stampFor(rm,path);const chooseLocal=localStamp.ts>remoteStamp.ts||(localStamp.ts===remoteStamp.ts&&(lv||localStamp.deleted));const chosenStamp=chooseLocal?localStamp:remoteStamp;const chosenVal=chooseLocal?le[sub]:re[sub];const chosenExists=chooseLocal?lv:rv;
+   metaOut[path]={ts:chosenStamp.ts,deleted:chosenStamp.deleted};
+   if(!chosenStamp.deleted&&chosenExists){if(isCalendarKey(key))merged[sub]=chosenVal;else{scalarSet=true;scalarVal=chosenVal}}
+  }
+  if(isCalendarKey(key)){if(Object.keys(merged).length||local?.[key]!==undefined||remote?.[key]!==undefined)out[key]=JSON.stringify(merged)}else if(scalarSet)out[key]=scalarVal;
+ }
+ out._syncMeta=metaOut;return out;
+}
+function writeCloudPayload(payload){cloudApplying=true;try{
+ const meta=payload?._syncMeta||{};localStorage.setItem(CLOUD_META_KEY,JSON.stringify(meta));
+ for(const key of [...CLOUD_KEYS,...APPEARANCE_KEYS]){if(!Object.prototype.hasOwnProperty.call(payload||{},key)){localStorage.removeItem(key);continue}const v=payload[key];if(v===null||v===undefined)localStorage.removeItem(key);else if(isCalendarKey(key)&&typeof v==='object')localStorage.setItem(key,JSON.stringify(v));else localStorage.setItem(key,String(v));}
+ }finally{cloudApplying=false}cloudLocalSnapshot=Object.fromEntries([...CLOUD_KEYS,...APPEARANCE_KEYS].map(k=>[k,rawLocal(k)]));}
+function seedMissingMeta(payload){const p={...(payload||{})},meta={...(p._syncMeta||{})},now=Date.now();for(const key of [...CLOUD_KEYS,...APPEARANCE_KEYS]){const entries=getEntries(p,key);if(!entries)continue;for(const sub of Object.keys(entries)){const path=entryPath(key,sub);if(!meta[path])meta[path]={ts:now,deleted:false}}}p._syncMeta=meta;return p}
+function markLocalChanges(key,oldRaw,newRaw){const meta=readSyncMeta(),now=Date.now();if(isCalendarKey(key)){const oldMap=parseMap(oldRaw),newMap=parseMap(newRaw);for(const sub of new Set([...Object.keys(oldMap),...Object.keys(newMap)])){if(JSON.stringify(oldMap[sub])!==JSON.stringify(newMap[sub]))meta[entryPath(key,sub)]={ts:now,deleted:!Object.prototype.hasOwnProperty.call(newMap,sub)}}}else meta[entryPath(key,'$')]={ts:now,deleted:newRaw===null};writeSyncMeta(meta)}
+function applyCloudAppearance(){
+ try{
+  const theme=localStorage.getItem('cynAppearanceTheme')||appearanceDefaults.theme;applyTheme(theme,false);
+  const icons=localStorage.getItem('cynAppearanceIcons')||appearanceDefaults.iconStyle;applyIconStyle(icons,false);const iconSelect=document.getElementById('iconStyle');if(iconSelect)iconSelect.value=icons;
+  applyBackground(localStorage.getItem('cynAppearanceBackground'),false);applyPageBackground(localStorage.getItem('cynAppearancePageBackground'),false);
+  const cardOverlay=localStorage.getItem('cynCardBgOverlay')||'28',cardBlur=localStorage.getItem('cynCardBgBlur')||'0',pageOverlay=localStorage.getItem('cynPageBgOverlay')||'30';
+  for(const [id,val] of [['cardBgOverlay',cardOverlay],['cardBgBlur',cardBlur],['pageBgOverlay',pageOverlay]]){const el=document.getElementById(id);if(el)el.value=val}
+  applyBackgroundAdjustments(false);
+  for(let i=0;i<5;i++){const data=localStorage.getItem('cynAppearanceNavIcon'+i);applyNavImage(i,data,false);const input=document.getElementById('navIcon'+(i+1));if(input)input.value=''}
+  const borderColor=localStorage.getItem('cynCardBorderColor')||'#eadce9',borderWidth=localStorage.getItem('cynCardBorderWidth')||'1',radius=localStorage.getItem('cynCardRadius')||'27';
+  for(const [id,val] of [['cardBorderColor',borderColor],['cardBorderWidth',borderWidth],['cardRadius',radius]]){const el=document.getElementById(id);if(el)el.value=val}applyCardStyle(false);
+  const brand=localStorage.getItem('cynBrandIcon');applyBrandIcon(brand,false);
+  const colors={};Object.keys(categoryDefaults).forEach(k=>colors[k]=localStorage.getItem('cynCategoryColor'+k)||categoryDefaults[k]);applyCategoryColors(colors,false);
+  try{moduleStyles=JSON.parse(localStorage.getItem(moduleStylesKey)||'{}')||{}}catch(e){moduleStyles={}}
+  restoreModuleOrder();renderModuleSettings();
+ }catch(e){console.warn('Appearance apply failed',e)}
+}
 async function cloudConnect(config,sendMagicLink=false){
  if(!window.supabase)throw new Error('Supabase SDK 載入失敗，請確認網路連線。');
  if(!config?.url||!config?.key)throw new Error('請先填寫 Supabase Project URL 與 anon / publishable key。');
  cloudClient=window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
- const {data:sessionData,error:sessionError}=await cloudClient.auth.getSession();if(sessionError)throw sessionError;
- cloudUser=sessionData.session?.user||null;
- if(sendMagicLink){
-   const email=document.getElementById('cloudEmail').value.trim();if(!email)throw new Error('請輸入登入電子郵件。');
-   const {error}=await cloudClient.auth.signInWithOtp({email,options:{emailRedirectTo:location.href}});
-   if(error)throw error;
-   cloudStatus('已寄出登入連結，請到信箱完成登入');cloudMessage('登入連結已寄出。請在同一台裝置開啟郵件中的連結，再回到此頁。');return;
- }
- if(!cloudUser){cloudStatus('設定已儲存，尚未登入');cloudMessage('設定已儲存。請按「儲存設定並寄送登入連結」完成登入。');return;}
+ const {data:sessionData,error:sessionError}=await cloudClient.auth.getSession();if(sessionError)throw sessionError;cloudUser=sessionData.session?.user||null;
+ if(sendMagicLink){const email=document.getElementById('cloudEmail').value.trim();if(!email)throw new Error('請輸入登入電子郵件。');const {error}=await cloudClient.auth.signInWithOtp({email,options:{emailRedirectTo:location.href}});if(error)throw error;cloudStatus('已寄出登入連結，請到信箱完成登入');cloudMessage('登入連結已寄出。請在同一台裝置開啟郵件中的連結，再回到此頁。');return}
+ if(!cloudUser){cloudStatus('設定已儲存，尚未登入');cloudMessage('設定已儲存。請按「儲存設定並寄送登入連結」完成登入。');return}
  await cloudInitialMerge();
  if(cloudChannel){try{await cloudClient.removeChannel(cloudChannel)}catch(e){}}
- cloudChannel=cloudClient.channel('cyn-calendar-state').on('postgres_changes',{event:'UPDATE',schema:'public',table:'app_state',filter:`user_id=eq.${cloudUser.id}`},async payload=>{
-   if(cloudApplying)return;
-   try{const local=readCalendarPayload(),remote=payload.new?.payload||{};writeCalendarPayload(mergeCalendarPayload(local,remote));if(typeof render==='function')render();cloudStatus('已連線（收到雲端更新）',true)}catch(e){console.warn('Cloud update failed',e)}
+ cloudChannel=cloudClient.channel('cyn-calendar-state').on('postgres_changes',{event:'*',schema:'public',table:'app_state',filter:`user_id=eq.${cloudUser.id}`},async payload=>{
+  if(cloudApplying||!payload.new?.payload)return;
+  try{const local=readCloudPayload(),merged=mergeCloudPayload(local,payload.new.payload);writeCloudPayload(merged);applyCloudAppearance();if(typeof render==='function')render();cloudStatus('已連線（收到雲端更新）',true)}catch(e){console.warn('Cloud update failed',e);cloudMessage('收到雲端更新時發生錯誤：'+(e.message||''))}
  }).subscribe();
- cloudStatus('已登入並同步',true);cloudMessage('雲端同步已啟用。請在其他裝置使用同一帳號登入。');
+ cloudStatus('已登入並同步',true);cloudMessage('雲端同步已啟用：班別、備註、心情與自訂外觀（含已壓縮的圖片）會同步。');
 }
 async function cloudInitialMerge(){
- const local=readCalendarPayload();
- const {data,error}=await cloudClient.from('app_state').select('payload,updated_at').eq('user_id',cloudUser.id).maybeSingle();
- if(error)throw error;
- if(!data){
-   const {error:insertError}=await cloudClient.from('app_state').insert({user_id:cloudUser.id,payload:local,updated_at:new Date().toISOString()});
-   if(insertError)throw insertError;
- }else{
-   // Merge by date/key: local values win on the same key; existing cloud-only values are retained.
-   const merged=mergeCalendarPayload(local,data.payload||{});
-   writeCalendarPayload(merged);
-   const {error:updateError}=await cloudClient.from('app_state').upsert({user_id:cloudUser.id,payload:merged,updated_at:new Date().toISOString()},{onConflict:'user_id'});
-   if(updateError)throw updateError;
- }
- if(typeof render==='function')render();
+ const local=readCloudPayload();const {data,error}=await cloudClient.from('app_state').select('payload,updated_at').eq('user_id',cloudUser.id).maybeSingle();if(error)throw error;
+ let merged;
+ if(!data){merged=seedMissingMeta(local);const {error:insertError}=await cloudClient.from('app_state').upsert({user_id:cloudUser.id,payload:merged,updated_at:new Date().toISOString()},{onConflict:'user_id'});if(insertError)throw insertError}
+ else{merged=mergeCloudPayload(local,data.payload||{});merged=seedMissingMeta(merged);const {error:updateError}=await cloudClient.from('app_state').upsert({user_id:cloudUser.id,payload:merged,updated_at:new Date().toISOString()},{onConflict:'user_id'});if(updateError)throw updateError}
+ writeCloudPayload(merged);applyCloudAppearance();if(typeof render==='function')render();
 }
 async function cloudSyncNow(){
- if(!cloudClient||!cloudUser)throw new Error('請先完成雲端設定並登入。');
- const local=readCalendarPayload();
- const {data,error:readError}=await cloudClient.from('app_state').select('payload').eq('user_id',cloudUser.id).maybeSingle();
- if(readError)throw readError;
- const merged=mergeCalendarPayload(local,data?.payload||{});
- const {error}=await cloudClient.from('app_state').upsert({user_id:cloudUser.id,payload:merged,updated_at:new Date().toISOString()},{onConflict:'user_id'});
- if(error)throw error;
- writeCalendarPayload(merged);if(typeof render==='function')render();
- cloudStatus('同步完成',true);cloudMessage('已將班別覆寫、備註與心情同步至雲端。');
+ if(!cloudClient||!cloudUser)throw new Error('請先完成雲端設定並登入。');const local=readCloudPayload();const {data,error:readError}=await cloudClient.from('app_state').select('payload').eq('user_id',cloudUser.id).maybeSingle();if(readError)throw readError;
+ let merged=mergeCloudPayload(local,data?.payload||{});merged=seedMissingMeta(merged);const {error}=await cloudClient.from('app_state').upsert({user_id:cloudUser.id,payload:merged,updated_at:new Date().toISOString()},{onConflict:'user_id'});if(error)throw error;
+ writeCloudPayload(merged);applyCloudAppearance();if(typeof render==='function')render();cloudStatus('同步完成',true);cloudMessage('已同步班別覆寫、備註、心情與外觀設定；自訂圖片會以圖片資料同步。');
 }
-function scheduleCloudSync(){
- if(cloudApplying||!cloudClient||!cloudUser)return;
- clearTimeout(cloudSyncTimer);cloudSyncTimer=setTimeout(()=>cloudSyncNow().catch(e=>{cloudStatus('同步失敗');cloudMessage('同步失敗：'+(e.message||'請稍後重試'));}),900);
-}
-// Watch only calendar data keys; other UI preferences and uploaded background images remain local.
+function scheduleCloudSync(){if(cloudApplying||!cloudClient||!cloudUser)return;clearTimeout(cloudSyncTimer);cloudSyncTimer=setTimeout(()=>cloudSyncNow().catch(e=>{cloudStatus('同步失敗');cloudMessage('同步失敗：'+(e.message||'請稍後重試'))}),1100)}
 const originalStorageSetItem=Storage.prototype.setItem;
-Storage.prototype.setItem=function(key,value){originalStorageSetItem.call(this,key,value);if(this===localStorage&&CLOUD_KEYS.includes(String(key)))scheduleCloudSync()};
+Storage.prototype.setItem=function(key,value){const oldRaw=this===localStorage?rawLocal(String(key)):null;originalStorageSetItem.call(this,key,value);if(this===localStorage&&isCloudKey(String(key))&&!cloudApplying){markLocalChanges(String(key),oldRaw,String(value));scheduleCloudSync()}};
 const originalStorageRemoveItem=Storage.prototype.removeItem;
-Storage.prototype.removeItem=function(key){originalStorageRemoveItem.call(this,key);if(this===localStorage&&CLOUD_KEYS.includes(String(key)))scheduleCloudSync()};
-document.getElementById('cloudLogin').addEventListener('click',async()=>{
- const config={url:document.getElementById('cloudUrl').value.trim(),key:document.getElementById('cloudKey').value.trim()};
- try{if(!config.url||!config.key)throw new Error('請填寫 Supabase Project URL 與 anon / publishable key。');localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify(config));await cloudConnect(config,true)}catch(e){cloudMessage(e.message||'連線失敗');cloudStatus('尚未連線')}
-});
-document.getElementById('cloudSyncNow').addEventListener('click',()=>cloudSyncNow().catch(e=>cloudMessage(e.message||'同步失敗')));
-document.getElementById('cloudLogout').addEventListener('click',async()=>{
- try{if(cloudClient)await cloudClient.auth.signOut()}catch(e){}
- cloudClient=null;cloudUser=null;if(cloudChannel){try{await cloudChannel.unsubscribe()}catch(e){}cloudChannel=null}
- cloudStatus('僅儲存在這台裝置');cloudMessage('已登出。這台裝置的本機資料仍保留。');
-});
-(async()=>{
- const config=readCloudConfig();
- if(config){document.getElementById('cloudUrl').value=config.url||'';document.getElementById('cloudKey').value=config.key||'';try{await cloudConnect(config,false)}catch(e){cloudStatus('尚未連線');cloudMessage('雲端尚未連線：'+(e.message||'請檢查設定'))}}
-})();
-
-
-// ===== Read-only sharing: shift overrides + appearance only; private notes/moods excluded =====
-const SHARE_APPEARANCE_KEYS=[
- 'cynAppearanceTheme','cynAppearanceIcons','cynAppearanceBackground','cynAppearancePageBackground',
- 'cynCardBgOverlay','cynCardBgBlur','cynPageBgOverlay','cynAppearanceNavIcon0','cynAppearanceNavIcon1','cynAppearanceNavIcon2','cynAppearanceNavIcon3','cynAppearanceNavIcon4',
- 'cynCardBorderColor','cynCardBorderWidth','cynCardRadius','cynBrandIcon',
- 'cynCategoryColorday','cynCategoryColornight','cynCategoryColoroff','cynCategoryColorovertime','cynCategoryColorleave',
- 'cynModuleStyles','cynModuleOrder'
-];
-let sharedReadOnly=false, sharedOwnerId=null, sharedChannel=null;
-function shareMsg(t){const e=document.getElementById('shareMessage');if(e)e.textContent=t}
-function readSharePayload(){const payload={cynShiftOverrides:{}};try{payload.cynShiftOverrides=JSON.parse(localStorage.getItem('cynShiftOverrides')||'{}')}catch(e){}payload.appearance={};for(const k of SHARE_APPEARANCE_KEYS){const v=localStorage.getItem(k);if(v!==null)payload.appearance[k]=v}return payload}
-function applySharePayload(payload){if(!payload||typeof payload!=='object')throw new Error('共享班表格式不正確');
- // Never import notes or moods from a shared payload.
- if(payload.cynShiftOverrides&&typeof payload.cynShiftOverrides==='object')localStorage.setItem('cynShiftOverrides',JSON.stringify(payload.cynShiftOverrides));
- const ap=payload.appearance&&typeof payload.appearance==='object'?payload.appearance:{};
- for(const k of SHARE_APPEARANCE_KEYS){if(Object.prototype.hasOwnProperty.call(ap,k))localStorage.setItem(k,ap[k]);else localStorage.removeItem(k)}
- // Re-apply appearance controls and layout from stored settings without triggering writes.
- try{if(typeof applyTheme==='function')applyTheme(localStorage.getItem('cynAppearanceTheme')||appearanceDefaults.theme,false);if(typeof applyIconStyle==='function')applyIconStyle(localStorage.getItem('cynAppearanceIcons')||appearanceDefaults.iconStyle,false);if(typeof applyBackground==='function')applyBackground(localStorage.getItem('cynAppearanceBackground'),false);if(typeof applyPageBackground==='function')applyPageBackground(localStorage.getItem('cynAppearancePageBackground'),false);if(typeof applyBackgroundAdjustments==='function')applyBackgroundAdjustments(false);if(typeof applyCardStyle==='function')applyCardStyle(false);if(typeof applyBrandIcon==='function')applyBrandIcon(localStorage.getItem('cynBrandIcon'),false);if(typeof applyCategoryColors==='function'){const c={};['day','night','off','overtime','leave'].forEach(k=>c[k]=localStorage.getItem('cynCategoryColor'+k));applyCategoryColors(c,false)}if(typeof moduleStyles!=='undefined'){try{moduleStyles=JSON.parse(localStorage.getItem('cynModuleStyles')||'{}')||{}}catch(e){moduleStyles={}}if(typeof restoreModuleOrder==='function')restoreModuleOrder();if(typeof getModuleCards==='function'&&typeof applyOneModuleStyle==='function')getModuleCards().forEach(item=>applyOneModuleStyle(item,false));if(typeof renderModuleSettings==='function')renderModuleSettings()} }catch(e){console.warn('共享外觀套用部分失敗',e)}
- if(typeof render==='function')render();
-}
-function setShareReadOnly(on){sharedReadOnly=!!on;document.body.classList.toggle('shared-readonly',sharedReadOnly);
- // Keep navigation and month navigation usable; disable editing controls and appearance inputs.
- document.querySelectorAll('#page-calendar button,#page-rules button,#page-appearance input,#page-appearance select,#page-appearance button,#page-calendar textarea,#page-calendar input').forEach(el=>{
-   if(['prev','next','today'].includes(el.id))return;
-   if(el.closest('.bottomnav'))return;
-   if(el.id==='cloudLogout'||el.id==='shareRefresh')return;
-   el.disabled=sharedReadOnly;
- });
- const note=document.getElementById('note');if(note)note.readOnly=sharedReadOnly;
- const save=document.getElementById('save');if(save)save.disabled=sharedReadOnly;const clear=document.getElementById('clear');if(clear)clear.disabled=sharedReadOnly;
- let banner=document.getElementById('sharedReadOnlyBanner');if(sharedReadOnly&&!banner){banner=document.createElement('div');banner.id='sharedReadOnlyBanner';banner.textContent='👀 目前是共享檢視模式：班表與外觀由擁有者管理';banner.style.cssText='position:sticky;top:0;z-index:30;padding:10px 14px;text-align:center;background:#fff0f7;color:#7b5271;border:1px solid #eadce9;border-radius:12px;margin:8px;font-size:13px';document.querySelector('header')?.after(banner)}else if(!sharedReadOnly&&banner)banner.remove();
-}
-async function shareEnsureLogin(){if(!cloudClient||!cloudUser)throw new Error('請先在上方雲端同步設定登入 Supabase。');return cloudUser}
-async function refreshShareList(){const user=await shareEnsureLogin();const {data,error}=await cloudClient.from('calendar_shares').select('viewer_email,created_at').eq('owner_id',user.id).order('created_at');if(error)throw error;document.getElementById('shareList').textContent=data?.length?'已邀請：'+data.map(x=>x.viewer_email).join('、'):'目前尚未邀請任何人。'}
-document.getElementById('shareInvite').addEventListener('click',async()=>{try{const user=await shareEnsureLogin();const email=document.getElementById('shareViewerEmail').value.trim().toLowerCase();if(!email||!email.includes('@'))throw new Error('請輸入有效的受邀者電子郵件。');if(email===(user.email||'').toLowerCase())throw new Error('不能邀請自己的登入信箱。');const {error}=await cloudClient.from('calendar_shares').upsert({owner_id:user.id,viewer_email:email},{onConflict:'owner_id,viewer_email'});if(error)throw error;shareMsg('已新增受邀者。請對方使用這個信箱登入同一個網站，再按「查看受邀班表」。');await refreshShareList()}catch(e){shareMsg('邀請失敗：'+(e.message||'請確認 SQL 權限與登入狀態'))}});
-document.getElementById('sharePublish').addEventListener('click',async()=>{try{const user=await shareEnsureLogin();const payload=readSharePayload();const {error}=await cloudClient.from('shared_calendar').upsert({owner_id:user.id,payload,updated_at:new Date().toISOString()},{onConflict:'owner_id'});if(error)throw error;shareMsg('共享班表已發布：只包含班別覆寫與外觀設定，不含私人備註和心情。受邀者按「查看受邀班表」即可載入。')}catch(e){shareMsg('發布失敗：'+(e.message||'請確認 shared_calendar 資料表與權限'))}});
-document.getElementById('shareRefresh').addEventListener('click',async()=>{try{const user=await shareEnsureLogin();const {data:invites,error:inviteErr}=await cloudClient.from('calendar_shares').select('owner_id,viewer_email').ilike('viewer_email',user.email||'');if(inviteErr)throw inviteErr;let ownerId=invites?.[0]?.owner_id||null;if(!ownerId){const {data:own,error:ownErr}=await cloudClient.from('shared_calendar').select('owner_id,payload,updated_at').eq('owner_id',user.id).maybeSingle();if(ownErr)throw ownErr;if(own){applySharePayload(own.payload);sharedOwnerId=user.id;setShareReadOnly(false);shareMsg('已載入你自己的已發布班表（擁有者模式）。');return}throw new Error('這個登入信箱尚未收到邀請，或擁有者尚未新增此信箱。')}
- const {data,error}=await cloudClient.from('shared_calendar').select('owner_id,payload,updated_at').eq('owner_id',ownerId).maybeSingle();if(error)throw error;if(!data)throw new Error('擁有者尚未發布共享班表。');applySharePayload(data.payload);sharedOwnerId=ownerId;setShareReadOnly(true);shareMsg('已載入共享班表（只讀）。最後更新：'+(data.updated_at?new Date(data.updated_at).toLocaleString():'未知'));
- }catch(e){shareMsg('載入共享班表失敗：'+(e.message||'請確認邀請信箱與 SQL 權限'))}});
-// Refresh owner invite list after sign-in when possible; preserve the existing personal app_state sync.
-const shareOriginalCloudConnect=cloudConnect;
-cloudConnect=async function(config,sendMagicLink=false){const result=await shareOriginalCloudConnect(config,sendMagicLink);if(cloudUser&&!sendMagicLink){try{await refreshShareList()}catch(e){/* viewers are not owners; list is optional */}}return result};
-
+Storage.prototype.removeItem=function(key){const oldRaw=this===localStorage?rawLocal(String(key)):null;originalStorageRemoveItem.call(this,key);if(this===localStorage&&isCloudKey(String(key))&&!cloudApplying){markLocalChanges(String(key),oldRaw,null);scheduleCloudSync()}};
+document.getElementById('cloudLogin').addEventListener('click',async()=>{const config={url:document.getElementById('cloudUrl').value.trim(),key:document.getElementById('cloudKey').value.trim()};try{if(!config.url||!config.key)throw new Error('請填寫 Supabase Project URL 與 anon / publishable key。');localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify(config));await cloudConnect(config,true)}catch(e){cloudMessage(e.message||'連線失敗');cloudStatus('尚未連線')}});
+document.getElementById('cloudSyncNow').addEventListener('click',()=>cloudSyncNow().catch(e=>{cloudMessage(e.message||'同步失敗');cloudStatus('同步失敗')}));
+document.getElementById('cloudLogout').addEventListener('click',async()=>{try{if(cloudClient)await cloudClient.auth.signOut()}catch(e){}cloudClient=null;cloudUser=null;if(cloudChannel){try{await cloudChannel.unsubscribe()}catch(e){}cloudChannel=null}cloudStatus('僅儲存在這台裝置');cloudMessage('已登出。這台裝置的本機資料仍保留。')});
+(async()=>{const config=readCloudConfig();if(config){document.getElementById('cloudUrl').value=config.url||'';document.getElementById('cloudKey').value=config.key||'';try{await cloudConnect(config,false)}catch(e){cloudStatus('尚未連線');cloudMessage('雲端尚未連線：'+(e.message||'請檢查設定'))}}})();
 render();
 </script></body></html>
