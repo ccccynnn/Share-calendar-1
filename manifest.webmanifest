@@ -1,0 +1,13 @@
+{
+  "name": "Ribbon Days｜輪班行事曆",
+  "short_name": "Ribbon Days",
+  "description": "可愛粉色蝴蝶結輪班與加班行事曆",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff8fb",
+  "theme_color": "#fff1f7",
+  "icons": [
+    {"src":"./bow-calendar.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
