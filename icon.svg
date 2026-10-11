@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+ <defs>
+  <linearGradient id="heart" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#ffb7d3"/><stop offset=".48" stop-color="#ff8fb9"/><stop offset="1" stop-color="#f66e9e"/></linearGradient>
+  <linearGradient id="paper" x1="0" y1="0" x2="0.9" y2="1"><stop stop-color="#fffdfd"/><stop offset="1" stop-color="#fff0f6"/></linearGradient>
+  <linearGradient id="bow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffb5d0"/><stop offset=".55" stop-color="#ff79aa"/><stop offset="1" stop-color="#ee5f96"/></linearGradient>
+  <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffdce9"/><stop offset="1" stop-color="#f7c5df"/></linearGradient>
+  <filter id="shadow" x="-25%" y="-25%" width="150%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#d95e8c" flood-opacity=".18"/></filter>
+  <filter id="shine"><feGaussianBlur stdDeviation="1.5"/></filter>
+ </defs>
+ <rect width="512" height="512" fill="#fff"/>
+ <!-- heart-shaped calendar outer shell -->
+ <g filter="url(#shadow)">
+  <path d="M256 443 C220 417 91 324 70 233 C50 151 112 99 177 119 C213 130 238 158 256 180 C274 158 299 130 335 119 C400 99 462 151 442 233 C421 324 292 417 256 443Z" fill="url(#heart)" stroke="#f58bad" stroke-width="5"/>
+  <path d="M256 424 C220 397 108 316 89 231 C72 166 119 121 174 137 C211 148 238 180 256 201 C274 180 301 148 338 137 C393 121 440 166 423 231 C404 316 292 397 256 424Z" fill="url(#paper)" stroke="#ffd4e3" stroke-width="4"/>
+  <!-- top band -->
+  <path d="M112 191 C107 158 133 135 169 143 C207 151 238 179 256 201 C274 179 305 151 343 143 C379 135 405 158 400 191 L395 214 L117 214Z" fill="url(#heart)" opacity=".98"/>
+  <path d="M121 184 C135 156 160 157 181 166" fill="none" stroke="#ffe8f1" stroke-width="8" stroke-linecap="round" opacity=".85"/>
+ </g>
+ <!-- calendar date tiles -->
+ <g stroke="#f8c6dc" stroke-width="1.5">
+  <rect x="137" y="226" width="48" height="39" rx="10" fill="url(#tile)"/><rect x="194" y="226" width="48" height="39" rx="10" fill="url(#tile)"/><rect x="270" y="226" width="48" height="39" rx="10" fill="url(#tile)"/><rect x="327" y="226" width="48" height="39" rx="10" fill="url(#tile)"/>
+  <rect x="137" y="273" width="48" height="39" rx="10" fill="url(#tile)"/><rect x="194" y="273" width="48" height="39" rx="10" fill="url(#tile)"/><rect x="270" y="273" width="48" height="39" rx="10" fill="url(#tile)"/><rect x="327" y="273" width="48" height="39" rx="10" fill="url(#tile)"/>
+  <rect x="137" y="320" width="48" height="39" rx="10" fill="url(#tile)"/><rect x="194" y="320" width="48" height="39" rx="10" fill="url(#tile)"/><rect x="270" y="320" width="48" height="39" rx="10" fill="url(#tile)"/><rect x="327" y="320" width="48" height="39" rx="10" fill="url(#tile)"/>
+  <rect x="194" y="273" width="48" height="39" rx="10" fill="#ff6f9f" stroke="#f65e94"/>
+ </g>
+ <path d="M218 284 C212 276 201 281 204 290 C206 297 218 305 218 305 C218 305 231 296 232 289 C233 280 222 276 218 284Z" fill="#fff"/>
+ <!-- tiny hearts at sides -->
+ <path d="M103 288 C97 280 87 285 91 294 C94 300 103 306 103 306 C103 306 113 299 114 292 C115 284 106 280 103 288Z" fill="#ff91b8" stroke="#ffd8e7" stroke-width="2"/>
+ <path d="M409 289 C403 281 393 286 397 295 C400 301 409 307 409 307 C409 307 419 300 420 293 C421 285 412 281 409 289Z" fill="#ff91b8" stroke="#ffd8e7" stroke-width="2"/>
+ <!-- large glossy bow -->
+ <g filter="url(#shadow)" stroke="#ee699b" stroke-width="3.5" stroke-linejoin="round">
+  <path d="M252 104 C224 64 173 54 150 76 C132 94 155 126 194 141 C214 149 235 138 252 119Z" fill="url(#bow)"/>
+  <path d="M260 104 C288 64 339 54 362 76 C380 94 357 126 318 141 C298 149 277 138 260 119Z" fill="url(#bow)"/>
+  <path d="M239 119 C219 133 199 153 203 170 C207 185 229 172 256 145Z" fill="url(#bow)"/>
+  <path d="M273 119 C293 133 313 153 309 170 C305 185 283 172 256 145Z" fill="url(#bow)"/>
+  <rect x="237" y="95" width="38" height="43" rx="13" fill="#ff8ab4"/>
+ </g>
+ <path d="M164 83 C177 73 198 83 213 99" fill="none" stroke="#ffe9f2" stroke-width="7" stroke-linecap="round" opacity=".9"/>
+ <path d="M348 83 C335 73 314 83 299 99" fill="none" stroke="#ffe9f2" stroke-width="7" stroke-linecap="round" opacity=".9"/>
+ <path d="M247 104 L247 111" stroke="#fff0f7" stroke-width="5" stroke-linecap="round"/>
+ <!-- little glossy binder loops behind bow -->
+ <g fill="#ff9cbe" stroke="#ef7aa4" stroke-width="4"><rect x="136" y="85" width="23" height="62" rx="11"/><rect x="353" y="85" width="23" height="62" rx="11"/></g>
+ <g stroke="#ffe8f1" stroke-width="5" stroke-linecap="round"><path d="M144 96 V119"/><path d="M361 96 V119"/></g>
+ <!-- sparkles -->
+ <g fill="#ffb5cf" stroke="#ff8eb5" stroke-width="2"><path d="M447 179 L453 194 L468 200 L453 206 L447 221 L441 206 L426 200 L441 194Z"/><path d="M75 202 L79 212 L89 216 L79 220 L75 230 L71 220 L61 216 L71 212Z"/></g>
+</svg>
