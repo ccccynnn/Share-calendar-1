@@ -189,7 +189,9 @@ body:before{content:var(--bubble-symbol, "🫧　·　✦　·　🫧")}
 <label class="cloud-label">Supabase Project URL<input id="cloudUrl" type="url" placeholder="https://你的專案.supabase.co" autocomplete="url"></label>
 <label class="cloud-label">Supabase anon / publishable key<input id="cloudKey" type="password" placeholder="公開 anon / publishable key" autocomplete="off"></label>
 <label class="cloud-label">登入電子郵件<input id="cloudEmail" type="email" placeholder="you@example.com" autocomplete="email"></label>
-<div class="btnrow cloud-actions"><button type="button" class="btn primary" id="cloudLogin">儲存設定並寄送登入連結</button><button type="button" class="btn" id="cloudSyncNow">立即同步</button><button type="button" class="btn" id="cloudLogout">登出</button></div>
+<div class="btnrow cloud-actions"><button type="button" class="btn primary" id="cloudLogin">儲存設定並寄送登入碼</button><button type="button" class="btn" id="cloudVerifyOtp">輸入登入碼並登入</button><button type="button" class="btn" id="cloudSyncNow">立即同步</button><button type="button" class="btn" id="cloudLogout">登出</button></div>
+<label class="cloud-label">電子郵件中的登入碼<input id="cloudOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="輸入郵件中的驗證碼"></label>
+<p class="notice">主畫面版請使用電子郵件驗證碼登入，不必跳轉到 Safari；若收到的是連結而非數字驗證碼，需先在 Supabase 的 Email Template 將登入郵件改為顯示驗證碼。</p>
 <p class="notice" id="cloudMessage" role="status"></p>
 </div>
 <div class="card cloud-card" id="shareCard">
@@ -444,9 +446,9 @@ function applyCloudAppearance(){
 async function cloudConnect(config,sendMagicLink=false){
  if(!window.supabase)throw new Error('Supabase SDK 載入失敗，請確認網路連線。');
  if(!config?.url||!config?.key)throw new Error('請先填寫 Supabase Project URL 與 anon / publishable key。');
- cloudClient=window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+ cloudClient=window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
  const {data:sessionData,error:sessionError}=await cloudClient.auth.getSession();if(sessionError)throw sessionError;cloudUser=sessionData.session?.user||null;
- if(sendMagicLink){const email=document.getElementById('cloudEmail').value.trim();if(!email)throw new Error('請輸入登入電子郵件。');const {error}=await cloudClient.auth.signInWithOtp({email,options:{emailRedirectTo:location.href}});if(error)throw error;cloudStatus('已寄出登入連結，請到信箱完成登入');cloudMessage('登入連結已寄出。請在同一台裝置開啟郵件中的連結，再回到此頁。');return}
+ if(sendMagicLink){const email=document.getElementById('cloudEmail').value.trim();if(!email)throw new Error('請輸入登入電子郵件。');const {error}=await cloudClient.auth.signInWithOtp({email,options:{shouldCreateUser:false}});if(error)throw error;cloudStatus('已寄出登入碼，請留在此頁輸入');cloudMessage('請查看電子郵件中的數字驗證碼，回到目前這個主畫面 App，填入下方欄位並按「輸入登入碼並登入」。若郵件只有登入連結，請先調整 Supabase 的 Email Template。');return}
  if(!cloudUser){cloudStatus('設定已儲存，尚未登入');cloudMessage('設定已儲存。請按「儲存設定並寄送登入連結」完成登入。');return}
  await detectShareRole();
  if(!isReadOnlyViewer){await cloudInitialMerge();await publishSharedCalendar();}
@@ -475,6 +477,7 @@ Storage.prototype.setItem=function(key,value){const oldRaw=this===localStorage?r
 const originalStorageRemoveItem=Storage.prototype.removeItem;
 Storage.prototype.removeItem=function(key){const oldRaw=this===localStorage?rawLocal(String(key)):null;originalStorageRemoveItem.call(this,key);if(this===localStorage&&isCloudKey(String(key))&&!cloudApplying){markLocalChanges(String(key),oldRaw,null);scheduleCloudSync()}};
 document.getElementById('cloudLogin').addEventListener('click',async()=>{const config={url:document.getElementById('cloudUrl').value.trim()||DEFAULT_CLOUD_CONFIG.url,key:document.getElementById('cloudKey').value.trim()||DEFAULT_CLOUD_CONFIG.key};try{if(!config.url||!config.key)throw new Error('請填寫 Supabase Project URL 與 anon / publishable key。');localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify(config));await cloudConnect(config,true)}catch(e){cloudMessage(e.message||'連線失敗');cloudStatus('尚未連線')}});
+document.getElementById('cloudVerifyOtp').addEventListener('click',async()=>{try{const config={url:document.getElementById('cloudUrl').value.trim()||DEFAULT_CLOUD_CONFIG.url,key:document.getElementById('cloudKey').value.trim()||DEFAULT_CLOUD_CONFIG.key};const email=document.getElementById('cloudEmail').value.trim();const token=document.getElementById('cloudOtp').value.trim().replace(/\s+/g,'');if(!email)throw new Error('請先輸入登入電子郵件。');if(!token)throw new Error('請輸入電子郵件中的登入碼。');if(!window.supabase)throw new Error('Supabase SDK 載入失敗，請確認網路連線。');if(!config.url||!config.key)throw new Error('請填寫 Supabase Project URL 與 anon / publishable key。');localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify(config));cloudClient=window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});const {data,error}=await cloudClient.auth.verifyOtp({email,token,type:'email'});if(error)throw error;cloudUser=data.user||data.session?.user||null;if(!cloudUser)throw new Error('驗證完成但未取得登入工作階段，請再試一次。');await cloudConnect(config,false)}catch(e){cloudMessage(e.message||'驗證碼登入失敗');cloudStatus('登入失敗')}});
 document.getElementById('cloudSyncNow').addEventListener('click',()=>cloudSyncNow().catch(e=>{cloudMessage(e.message||'同步失敗');cloudStatus('同步失敗')}));
 document.getElementById('cloudLogout').addEventListener('click',async()=>{try{if(cloudClient)await cloudClient.auth.signOut()}catch(e){}cloudClient=null;cloudUser=null;if(cloudChannel){try{await cloudChannel.unsubscribe()}catch(e){}cloudChannel=null}cloudStatus('僅儲存在這台裝置');cloudMessage('已登出。這台裝置的本機資料仍保留。')});
 document.getElementById('shareAdd').addEventListener('click',()=>addShareViewer().catch(e=>shareMessage(e.message||'新增失敗')));document.getElementById('shareRefresh').addEventListener('click',()=>refreshShareList().then(()=>shareMessage('分享名單已更新。')).catch(e=>shareMessage(e.message||'讀取名單失敗')));
