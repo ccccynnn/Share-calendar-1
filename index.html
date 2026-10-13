@@ -387,16 +387,39 @@ function applyShareModeUI(){
 async function clearSharedCalendarCache(){cloudApplying=true;try{localStorage.removeItem('cynShiftOverrides');shiftOverrides={};}finally{cloudApplying=false;}if(typeof render==='function')render();}
 async function loadSharedCalendar(){if(!sharedOwnerId)return;const {data,error}=await cloudClient.from('shared_calendar').select('payload,updated_at').eq('owner_id',sharedOwnerId).maybeSingle();if(error)throw error;const p=data?.payload||{};const overrides=p.cynShiftOverrides||{};cloudApplying=true;try{localStorage.setItem('cynShiftOverrides',JSON.stringify(overrides));shiftOverrides=overrides;}finally{cloudApplying=false;}const changed=applySharedAppearance(p.appearance||{});applyCloudAppearance();if(typeof render==='function')render();if(changed)shareMessage('已同步擁有者的外觀與自訂圖片。');}
 async function submitShareRequest(){
- const email=String(cloudUser?.email||'').trim().toLowerCase();if(!email)throw new Error('目前登入帳號沒有可用的電子郵件。');
- const {data:approved,error:approvedError}=await cloudClient.from('calendar_shares').select('viewer_email').eq('owner_id',SITE_OWNER_UID).ilike('viewer_email',email).maybeSingle();if(approvedError)throw approvedError;
+ const email=String(cloudUser?.email||'').trim().toLowerCase();
+ if(!email)throw new Error('目前登入帳號沒有可用的電子郵件。');
+ const {data:approved,error:approvedError}=await cloudClient.from('calendar_shares')
+  .select('viewer_email').eq('owner_id',SITE_OWNER_UID).ilike('viewer_email',email).maybeSingle();
+ if(approvedError)throw new Error('確認核准名單失敗：'+approvedError.message);
  if(approved){shareMessage('這個電子郵件已獲批准，可以查看分享班表。');return;}
- const {error}=await cloudClient.from('share_requests').upsert({owner_id:SITE_OWNER_UID,viewer_email:email,status:'pending'},{onConflict:'owner_id,viewer_email'});if(error)throw new Error('送出查看申請失敗。請確認測試 Supabase 已建立 share_requests 資料表與 RLS 政策。');
+ // 查詢既有紀錄，訪客端不使用 upsert，避免觸發不允許的 UPDATE。
+ const {data:request,error:requestError}=await cloudClient.from('share_requests')
+  .select('status').eq('owner_id',SITE_OWNER_UID).ilike('viewer_email',email).maybeSingle();
+ if(requestError)throw new Error('查詢既有申請失敗：'+requestError.message);
+ if(request?.status==='pending'){shareMessage('查看申請已送出，目前正在等待管理者核准。');return;}
+ if(request?.status==='approved'){shareMessage('申請紀錄顯示已核准；若仍無法查看，請管理者檢查核准名單。');return;}
+ if(request?.status==='rejected'){shareMessage('這個申請先前已被拒絕。如需重新申請，請聯絡管理者重設申請狀態。');return;}
+ const {error}=await cloudClient.from('share_requests').insert({owner_id:SITE_OWNER_UID,viewer_email:email,status:'pending'});
+ if(error)throw new Error('送出查看申請失敗：'+error.message);
  shareMessage('已送出查看申請，等待管理者批准。');
 }
 async function approveShareRequest(email){
- const {error}=await cloudClient.from('calendar_shares').upsert({owner_id:cloudUser.id,viewer_email:email},{onConflict:'owner_id,viewer_email'});if(error)throw error;
- const {error:requestError}=await cloudClient.from('share_requests').update({status:'approved'}).eq('owner_id',cloudUser.id).eq('viewer_email',email);if(requestError)throw requestError;
- await publishSharedCalendar();await refreshShareList();shareMessage('已批准 '+email+'，對方可查看唯讀班表。');
+ const normalizedEmail=String(email||'').trim().toLowerCase();
+ if(!normalizedEmail)throw new Error('申請者電子郵件無效。');
+ // 先建立查看權限，成功後才更新申請狀態。
+ const {error:shareError}=await cloudClient.from('calendar_shares')
+  .upsert({owner_id:SITE_OWNER_UID,viewer_email:normalizedEmail},{onConflict:'owner_id,viewer_email'});
+ if(shareError)throw new Error('新增查看權限失敗，申請狀態尚未更新：'+shareError.message);
+ const {data:updatedRequests,error:requestError}=await cloudClient.from('share_requests')
+  .update({status:'approved'}).eq('owner_id',SITE_OWNER_UID)
+  .ilike('viewer_email',normalizedEmail).select('viewer_email');
+ if(requestError)throw new Error('查看權限已建立，但更新申請狀態失敗：'+requestError.message+'。請重新整理管理者清單並檢查申請紀錄。');
+ if(!updatedRequests?.length)throw new Error('查看權限已建立，但找不到可更新的申請紀錄；請檢查 share_requests。');
+ try{await publishSharedCalendar();}
+ catch(e){throw new Error('查看權限與申請狀態已更新，但發布班表／外觀時失敗：'+(e.message||String(e)));}
+ await refreshShareList();
+ shareMessage('已批准 '+normalizedEmail+'，對方可查看唯讀班表。');
 }
 async function rejectShareRequest(email){
  const {error}=await cloudClient.from('share_requests').update({status:'rejected'}).eq('owner_id',cloudUser.id).eq('viewer_email',email);if(error)throw error;await refreshShareList();shareMessage('已拒絕 '+email+' 的查看申請。');
@@ -409,7 +432,7 @@ async function refreshShareList(){
  const reqBox=document.getElementById('shareRequests'),box=document.getElementById('shareList');
  const {data:requests,error:reqError}=await cloudClient.from('share_requests').select('viewer_email,created_at,status').eq('owner_id',cloudUser.id).eq('status','pending').order('created_at',{ascending:true});if(reqError)throw new Error('讀取待審核申請失敗：請確認 share_requests 資料表與 RLS 政策。');
  if(reqBox){reqBox.replaceChildren();if(!requests?.length)reqBox.textContent='目前沒有待審核的登入申請。';(requests||[]).forEach(row=>{const wrap=document.createElement('div');wrap.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid #eadce9';const email=document.createElement('span');email.textContent=row.viewer_email;const actions=document.createElement('div');actions.style.cssText='display:flex;gap:6px';const yes=document.createElement('button');yes.className='btn primary';yes.type='button';yes.textContent='批准';yes.addEventListener('click',async()=>{yes.disabled=true;try{await approveShareRequest(row.viewer_email)}catch(e){shareMessage('批准失敗：'+(e.message||''));yes.disabled=false}});const no=document.createElement('button');no.className='btn';no.type='button';no.textContent='拒絕';no.addEventListener('click',async()=>{no.disabled=true;try{await rejectShareRequest(row.viewer_email)}catch(e){shareMessage('拒絕失敗：'+(e.message||''));no.disabled=false}});actions.append(yes,no);wrap.append(email,actions);reqBox.append(wrap);});}
- const {data,error}=await cloudClient.from('calendar_shares').select('viewer_email,created_at').eq('owner_id',cloudUser.id).order('created_at',{ascending:true});if(error)throw error;box.replaceChildren();if(!data||!data.length){box.textContent='目前沒有已批准的查看者。';return;}data.forEach(row=>{const wrap=document.createElement('div');wrap.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #eadce9';const email=document.createElement('span');email.textContent=row.viewer_email;const btn=document.createElement('button');btn.type='button';btn.className='btn';btn.textContent='撤銷批准';btn.addEventListener('click',async()=>{if(!confirm('確定撤銷此查看者的權限？'))return;try{const {error}=await cloudClient.from('calendar_shares').delete().eq('owner_id',cloudUser.id).eq('viewer_email',row.viewer_email);if(error)throw error;await refreshShareList();shareMessage('已撤銷查看權限。')}catch(e){shareMessage('撤銷失敗：'+(e.message||''));}});wrap.append(email,btn);box.append(wrap);});
+ const {data,error}=await cloudClient.from('calendar_shares').select('viewer_email,created_at').eq('owner_id',cloudUser.id).order('created_at',{ascending:true});if(error)throw error;box.replaceChildren();if(!data||!data.length){box.textContent='目前沒有已批准的查看者。';return;}data.forEach(row=>{const wrap=document.createElement('div');wrap.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #eadce9';const email=document.createElement('span');email.textContent=row.viewer_email;const btn=document.createElement('button');btn.type='button';btn.className='btn';btn.textContent='撤銷批准';btn.addEventListener('click',async()=>{if(!confirm('確定撤銷此查看者的權限？'))return;try{const normalizedEmail=String(row.viewer_email||'').trim().toLowerCase();const {error}=await cloudClient.from('calendar_shares').delete().eq('owner_id',cloudUser.id).ilike('viewer_email',normalizedEmail);if(error)throw error;const {data:resetRows,error:resetError}=await cloudClient.from('share_requests').update({status:'pending'}).eq('owner_id',cloudUser.id).ilike('viewer_email',normalizedEmail).select('viewer_email');if(resetError)throw new Error('查看權限已撤銷，但申請狀態重設失敗：'+resetError.message);if(!resetRows?.length)throw new Error('查看權限已撤銷，但找不到原申請紀錄；請確認 share_requests。');await refreshShareList();shareMessage('已撤銷 '+normalizedEmail+' 的查看權限，並將申請重設為待核准；如要恢復查看，請在待審核清單按「批准」。')}catch(e){shareMessage('撤銷失敗：'+(e.message||''));}});wrap.append(email,btn);box.append(wrap);});
 }
 
 
